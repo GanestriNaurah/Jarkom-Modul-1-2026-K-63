@@ -805,6 +805,143 @@ Melakukan verifikasi terhadap interface jaringan dan konektivitas dasar antara n
 ```bash
 ip a
 ping -c 4 10.95.3.2
+```
+## 10. Analisis Lalu Lintas Jaringan Dasar
+
+### Tujuan
+
+Melakukan verifikasi terhadap interface jaringan dan konektivitas dasar antara node Mika dan Knights menggunakan protokol ICMP melalui perintah `ping`.
+
+### Perintah yang Digunakan
+
+```bash
+ip a
+ping -c 4 10.95.3.2
+```
+
+### Analisis
+
+Perintah `ip a` digunakan untuk melihat konfigurasi interface jaringan pada perangkat. Selanjutnya, perintah `ping` digunakan untuk menguji konektivitas antara node Mika dengan alamat IP `10.95.3.2`.
+
+<img width="1030" height="692" alt="Screenshot 2026-09-17 164730" src="https://github.com/user-attachments/assets/db2d4531-b3e4-40e6-b72c-c1376271df33" />
+
+
+---
+
+## 11. Konfigurasi Antarmuka & Routing Dasar
+
+### Tujuan
+
+Melakukan konfigurasi alamat IP statis pada interface jaringan serta mengatur routing dasar pada perangkat.
+
+### Perintah yang Digunakan
+
+```bash
+ip addr add 10.95.3.1/24 dev eth0
+ip link set eth0 up
+ip route add default via 10.95.3.254
+ip route show
+```
+
+### Analisis
+
+Alamat IP `10.95.3.1/24` diberikan pada interface `eth0`, kemudian interface diaktifkan. Selanjutnya, default gateway `10.95.3.254` ditambahkan untuk mengatur jalur komunikasi jaringan. Perintah `ip route show` digunakan untuk melihat routing yang telah dikonfigurasi.
+
+---
+
+<img width="2880" height="1800" alt="Screenshot 2026-09-17 175214" src="https://github.com/user-attachments/assets/2c3980e6-f6ea-4c23-b644-ad70e9f02e3b" />
+
+
+## 12. Analisis TCP Flags (Three-Way Handshake & Teardown)
+
+### Tujuan
+
+Menganalisis proses pembentukan dan pengakhiran koneksi TCP berdasarkan flag yang terdapat pada paket jaringan.
+
+### Perintah yang Digunakan
+
+```bash
+tcpdump -i eth0 -nn -vv 'tcp port 22' -w tcp_analysis.pcap
+tcpdump -i eth0 -nn 'tcp[tcpflags] & (tcp-syn|tcp-ack) != 0'
+```
+
+### Analisis
+
+Analisis dilakukan terhadap komunikasi TCP pada port `22` yang digunakan oleh SSH. Proses pembentukan koneksi TCP dapat diamati melalui **Three-Way Handshake**, yaitu:
+
+1. `SYN`
+2. `SYN-ACK`
+3. `ACK`
+
+Sedangkan proses pengakhiran koneksi dapat diamati melalui flag `FIN` atau `RST`.
+
+---
+
+<img width="600" height="500" alt="Screenshot 2026-09-17 180730" src="https://github.com/user-attachments/assets/7edae4b5-0a38-4cee-b5a1-c10186bfcadb" />
+
+---
+
+<img width="600" height="500" alt="Screenshot 2026-09-17 180804" src="https://github.com/user-attachments/assets/cc2dc9d1-db9a-445e-926b-9921a1e502f5" />
+
+---
+
+<img width="600" height="600" alt="Screenshot 2026-09-17 180815" src="https://github.com/user-attachments/assets/9f57e8c7-bf6a-4ec4-8651-8cde3426f67b" />
+
+---
+
+
+## 13. Konfigurasi SSH Server & Key-Based Authentication
+
+### Tujuan
+
+Mengonfigurasi SSH server pada node Knights dan menerapkan autentikasi berbasis public key dari client Mika.
+
+### Konfigurasi pada Server Knights
+
+```bash
+apk update && apk add openssh
+ssh-keygen -A
+ssh-keygen -t rsa -f /etc/ssh/ssh_host_rsa_key -N ""
+ssh-keygen -t ecdsa -f /etc/ssh/ssh_host_ecdsa_key -N ""
+adduser -h /home/mika_admin mika_admin
+passwd mika_admin
+mkdir -p /var/empty
+chmod 755 /var/empty
+killall -9 sshd
+/usr/sbin/sshd
+```
+
+Konfigurasi pada `/etc/ssh/sshd_config`:
+
+```text
+Port 22
+PermitRootLogin prohibit-password
+PubkeyAuthentication yes
+PasswordAuthentication no
+ChallengeResponseAuthentication no
+```
+
+### Konfigurasi pada Client Mika
+
+```bash
+ssh-keygen -t rsa -b 2048
+ssh-copy-id mika_admin@10.95.3.2
+ssh mika_admin@10.95.3.2
+```
+
+### Analisis
+
+Public key dari client Mika dikirimkan ke server Knights menggunakan `ssh-copy-id`. Setelah itu, koneksi SSH dilakukan menggunakan autentikasi berbasis public key.
+
+Keberhasilan konfigurasi dapat dilihat ketika client berhasil masuk ke server dan terminal berubah menjadi:
+
+```text
+Knights:~$
+```
+
+tanpa meminta password, yang menunjukkan bahwa autentikasi menggunakan public key telah berhasil.
+
+<img width="1438" height="1724" alt="Screenshot 2026-09-17 192921" src="https://github.com/user-attachments/assets/b30126bb-2f1d-4e36-b778-3d1080b423b0" />
 
 
 ## Soal 14 — Brute Force Analysis (wired_bruteforce.pcapng)
