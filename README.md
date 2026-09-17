@@ -794,6 +794,19 @@ Baris keempat dari bawah
 | Download dokumen | `RETR protocol7_manifesto.txt` | `226 Transfer complete` |
 | Percobaan upload | `STOR test_upload.txt` | **`550 Permission denied`** |
 
+## 10. Analisis Lalu Lintas Jaringan Dasar
+
+### Tujuan
+
+Melakukan verifikasi terhadap interface jaringan dan konektivitas dasar antara node Mika dan Knights menggunakan protokol ICMP melalui perintah `ping`.
+
+### Perintah yang Digunakan
+
+```bash
+ip a
+ping -c 4 10.95.3.2
+
+
 ## Soal 14 — Brute Force Analysis (wired_bruteforce.pcapng)
 **Difficulty:** Easy
 
