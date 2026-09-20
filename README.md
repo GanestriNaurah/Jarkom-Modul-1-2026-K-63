@@ -806,18 +806,6 @@ Melakukan verifikasi terhadap interface jaringan dan konektivitas dasar antara n
 ip a
 ping -c 4 10.95.3.2
 ```
-## 10. Analisis Lalu Lintas Jaringan Dasar
-
-### Tujuan
-
-Melakukan verifikasi terhadap interface jaringan dan konektivitas dasar antara node Mika dan Knights menggunakan protokol ICMP melalui perintah `ping`.
-
-### Perintah yang Digunakan
-
-```bash
-ip a
-ping -c 4 10.95.3.2
-```
 
 ### Analisis
 
@@ -1095,3 +1083,98 @@ tanpa meminta password, yang menunjukkan bahwa autentikasi menggunakan public ke
 
 <img width="400" height="300" alt="Screenshot 2026-09-16 180156" src="https://github.com/user-attachments/assets/a24db27c-30c2-46b1-a367-9d3e69fab6a2" />
 
+# Revisi
+
+## Soal No 13
+<img width="1442" height="978" alt="image" src="https://github.com/user-attachments/assets/4e3be4e2-4d39-41ad-b426-9af541cc23f1" />
+
+---
+<img width="1452" height="1556" alt="image" src="https://github.com/user-attachments/assets/4e2cd0d9-ed71-47c4-aac5-535ec5b7b262" />
+
+---
+
+<img width="2042" height="902" alt="Screenshot 2026-09-21 055628" src="https://github.com/user-attachments/assets/98632b13-8d0f-4e22-b197-56aeeac26fe9" />
+
+---
+<img width="1914" height="1688" alt="Screenshot 2026-09-21 055643" src="https://github.com/user-attachments/assets/2564604d-0d22-48d8-9c62-6b5dee4b24d1" />
+
+Ada dua masalah berbeda yang muncul waktu kerjain soal ini. Dua-duanya dijelasin di bawah.
+
+Masalah 1: Layar kosong / nggak respon setelah ketik ssh
+
+Waktu jalanin `ssh mika_admin@10.95.3.2` atau `ssh-copy-id`, terminalnya diam aja lumayan lama sebelum akhirnya jalan atau malah timeout.
+
+Ini terjadi karena SSH server secara default coba mencocokkan IP yang connect ke sebuah nama domain (reverse DNS lookup) sebelum lanjut proses login. Masalahnya, di jaringan GNS3 ini tidak ada DNS server yang bisa jawab pertanyaan itu, jadi SSH nunggu sampai akhirnya nmeyerah sendiri (timeout). Makanya keliatannya kayak macet, padahal sebenarnya cuma nunggu sesuatu yang emang tidak akan pernah dijawab.
+
+Cara benerinnya, di node Knights buka file konfigurasi:
+
+```bash
+nano /etc/ssh/sshd_config
+```
+
+Tambahkan dua baris ini:
+```bash
+UseDNS no
+GSSAPIAuthentication no
+```
+
+Simpan filenya, lalu restart service:
+
+```bash
+pkill sshd
+/usr/sbin/sshd
+```
+
+Coba connect lagi dari Mika, harusnya sekarang langsung jalan tanpa jeda lama.
+
+Masalah 2: Host key verification failed
+
+Muncul pesan error kayak gini waktu jalanin `ssh-copy-id`:
+```bash
+WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED!
+IT IS POSSIBLE THAT SOMEONE IS DOING SOMETHING NASTY!
+Someone could be eavesdropping on you right now (man-in-the-middle attack)!
+Host key verification failed.
+```
+
+Penyebabnya: setiap kali SSH server pertama kali dijalankan lewat ssh-keygen -A, dia bikin "host key" unik yang jadi identitasnya. Waktu Mika pertama kali connect, SSH nyimpen fingerprint itu di file known_hosts sebagai catatan.
+
+Karena node Knights beberapa kali sempat restart selama pengerjaan (GNS3 crash, koneksi putus, dll), setiap kali itu kejadian, ssh-keygen -A membuat host key baru walaupun IP-nya tetap sama. Jadi waktu Mika coba connect lagi, SSH bandingin fingerprint yang baru sama yang tercatat lama, hasilnya beda, dan langsung curiga ada yang aneh (kemungkinan man-in-the-middle attack), makanya ditolak total demi keamanan.
+
+Cara perbaikinya, di Mika jalankan:
+
+```bash
+ssh-keygen -R 10.95.3.2
+```
+
+Ini bakal hapus catatan fingerprint lama. Setelah itu ulangi:
+
+```bash
+ssh-copy-id mika_admin@10.95.3.2
+```
+
+Nanti bakal muncul konfirmasi fingerprint baru, tinggal ketik yes terus masukin password seperti biasa.
+
+Kesimpulan
+
+Dua masalah ini bukan salah konfigurasi atau bug, tapi memang perilaku bawaan SSH yang sengaja dirancang seperti itu. Masalah pertama terjadi karena SSH coba verifikasi tambahan (reverse DNS) yang tidak relevan di jaringan lab tanpa DNS server. Masalah kedua terjadi karena SSH sengaja curiga tiap kali ada perubahan identitas server yang tidak terduga, sebagai perlindungan dari serangan man-in-the-middle.
+
+## Soal no 15
+<img width="1988" height="1498" alt="image" src="https://github.com/user-attachments/assets/2a7ae0d9-74a0-4ba7-95d5-9f67693f037c" />
+
+Menggunakan filter `usb.idVendor` maka akan muncul packet dan device descriptor pada panel bawahnya yang berisi idVendor, idProduct dan Device Address. Untuk password, bisa kembali menggunakan filter `usb.capdata` untuk 
+
+```bash
+Decode
+04=a 05=b 06=c 07=d 08=e 09=f 0a=g 0b=h 0c=i 0d=j
+0e=k 0f=l 10=m 11=n 12=o 13=p 14=q 15=r 16=s 17=t
+18=u 19=v 1a=w 1b=x 1c=y 1d=z
+1e=1 1f=2 20=3 21=4 22=5 23=6 24=7 25=8 26=9 27=0
+2c=spasi 2d=tanda "-" (jadi "_" kalau di-Shift)
+```
+## Soal No 16
+<img width="1822" height="1428" alt="image" src="https://github.com/user-attachments/assets/bec408aa-0430-425d-ba63-eac6c6359b23" />
+
+Menggunakan filter `http.request.command == "RETR"` dimana akan memfilter packet yang memiliki file yang perlu diunduh sebelumnya
+
+<img width="1420" height="1324" alt="image" src="https://github.com/user-attachments/assets/b629c854-bb8e-467e-9a80-2d2c7c64716a" />
